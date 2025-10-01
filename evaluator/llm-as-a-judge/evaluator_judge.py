@@ -9,7 +9,7 @@ import json
 def extract_eval_fields(example):
     """Extract necessary fields from the evaluation example."""
     user_input = example['user_input']
-    reference_response = questions[i]['answer'][0]
+    reference_response = example['answer'][0]
     retrieved_contexts = [context_json['context'] for context_json in example['retrieved_contexts']]
     return user_input, reference_response, retrieved_contexts
 #-------------------------------------------------------------------------------
