@@ -1,4 +1,4 @@
-from metrics import compute_mrr, compute_precision, compute_recall
+from ir_metrics import compute_mrr, compute_precision, compute_recall
 
 #--------------------Modificar con lógica de cada uno--------------------------
 def extract_eval_fields(example, level='paragraph'):
