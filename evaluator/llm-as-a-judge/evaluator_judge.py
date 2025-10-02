@@ -9,12 +9,12 @@ import json
 def extract_eval_fields(example):
     """Extract necessary fields from the evaluation example."""
     user_input = example['user_input']
-    reference_response = example['answer'][0]
+    reference_response = example['reference_answer']
     retrieved_contexts = [context_json['context'] for context_json in example['retrieved_contexts']]
     return user_input, reference_response, retrieved_contexts
 #-------------------------------------------------------------------------------
 
-def evaluate_file(results_path, questions, judge_llm, metric="recall"):
+def evaluate_file(results_path, judge_llm, metric="recall"):
     """Evaluate a single results file for the specified metric."""
     with open(results_path) as f:
         eval_dataset = json.load(f)
@@ -36,7 +36,6 @@ def evaluate_file(results_path, questions, judge_llm, metric="recall"):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Evaluate with LLM-as-Judge Retrieval Results")
     parser.add_argument('--judge_model', type=str, choices=['gpt', 'selene'], default='selene', help='LLM model to use as judge: gpt or selene')
-    parser.add_argument('--dataset', type=str, default=None, help='Path to the questions dataset JSON file')
     parser.add_argument('--file', type=str, default=None, help='Path to a single results file')
     parser.add_argument('--folder', type=str, default=None, help='Path to a folder with multiple results files')
     parser.add_argument('--output', type=str, default="context_metric_results.jsonl", help='Output file for folder mode')
@@ -54,20 +53,13 @@ if __name__ == "__main__":
     else:
         raise ValueError("Unsupported judge model. Choose 'gpt' or 'selene'.")
 
-    dataset_path = args.dataset
-    if dataset_path and os.path.exists(dataset_path):
-        with open(dataset_path) as f:
-            questions = json.load(f)
-    else:
-        exit("No valid dataset path provided")
-
+    output_path = args.output
     if args.folder:
-        output_path = args.output
         for filename in sorted(os.listdir(args.folder)):
             if filename.endswith('.json'):
                 results_path = os.path.join(args.folder, filename)
                 print(f"\nEvaluating file: {results_path}")
-                avg_score = evaluate_file(results_path, questions, judge_llm, metric=args.metric)
+                avg_score = evaluate_file(results_path, judge_llm, metric=args.metric)
                 # Save result after each file
                 with open(output_path, "a") as out_f:
                     out_f.write(json.dumps({
@@ -75,7 +67,12 @@ if __name__ == "__main__":
                         f"average_context_{args.metric}": avg_score
                     }) + "\n")
     elif args.file:
-        avg_score = evaluate_file(args.results, questions, judge_llm, metric=args.metric)
+        avg_score = evaluate_file(args.file, judge_llm, metric=args.metric)
+        with open(output_path, "a") as out_f:
+                    out_f.write(json.dumps({
+                        "file": args.file,
+                        f"average_context_{args.metric}": avg_score
+                    }) + "\n")
         print(f"Average Context {args.metric.capitalize()}: {avg_score:.3f}")
     else:
         print("Please provide either --file <file> or --folder <folder> argument.")

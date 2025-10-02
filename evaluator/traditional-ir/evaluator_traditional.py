@@ -1,4 +1,7 @@
 from ir_metrics import compute_mrr, compute_precision, compute_recall
+import argparse
+import json
+import os
 
 #--------------------Modificar con lógica de cada uno--------------------------
 def extract_eval_fields(example, level='paragraph'):
@@ -12,18 +15,17 @@ def extract_eval_fields(example, level='paragraph'):
         reference_sources = [example['reference_source_id']]
         retrieved_sources = [f"{ctx['context_metadata']['source_id']}" 
                                  for ctx in example['retrieved_contexts']]                             
-    return reference_response, retrieved_contexts
+    return reference_sources, retrieved_sources
 #-------------------------------------------------------------------------------
 
-def evaluate_retrieval(eval_dataset, method='paragraph'):
+def evaluate_retrieval(eval_dataset, level='paragraph'):
     results = {
         'precision': [],
         'recall': [],
         'mrr': []
     }
     
-
-    deduplicate = True if method == 'document' else False # If document level, deduplicate by source_id. In paragraph level, do not deduplicate.
+    deduplicate = True if level == 'document' else False # If document level, deduplicate by source_id. In paragraph level, do not deduplicate.
 
     for eval_item in eval_dataset:
         reference_sources, retrieved_sources = extract_eval_fields(eval_item, level=level)
@@ -46,8 +48,8 @@ def evaluate_retrieval(eval_dataset, method='paragraph'):
 def evaluate_file(results_path):
     with open(results_path) as f:
         eval_dataset = json.load(f)
-    results_paragraph = evaluate_retrieval(eval_dataset, method='paragraph', logging=logging)
-    results_document = evaluate_retrieval(eval_dataset, method='document', logging=logging)
+    results_paragraph = evaluate_retrieval(eval_dataset, level='paragraph')
+    results_document = evaluate_retrieval(eval_dataset, level='document')
     return {
         "file": os.path.basename(results_path),
         "avg_precision_paragraph": results_paragraph["avg_precision"],
@@ -72,11 +74,11 @@ if __name__ == "__main__":
             if filename.endswith('.json'):
                 results_path = os.path.join(args.folder, filename)
                 print(f"Evaluating file: {results_path}")
-                result = evaluate_file(results_path, logging=args.logging)
+                result = evaluate_file(results_path)
                 with open(output_path, "a") as out_f:
                     out_f.write(json.dumps(result) + "\n")
     elif args.file:
-        result = evaluate_file(args.results, logging=args.logging)
+        result = evaluate_file(args.file, logging=args.logging)
         print(json.dumps(result, indent=2))
     else:
-        print("Please provide either --results <file> or --folder <folder> argument.")
+        print("Please provide either --file <file> or --folder <folder> argument.")
