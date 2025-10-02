@@ -2,7 +2,7 @@ import argparse
 import gradio as gr
 import re
 import os
-
+from backend.rag import RAG
 
 class DummyRAG:
     def __init__(self, config_path=None):
@@ -17,7 +17,7 @@ class DummyRAG:
 
 
 def main(config_path):
-    rag = DummyRAG(config_path)
+    rag = RAG(config_path)
     gradio_app(rag)
 
 
@@ -27,34 +27,65 @@ def user_input(user_message, chat_history):
     return "", chat_history
 
 
+# def parse_sources(raw_text):
+#     pattern = r"- \[(\d+)\] \*\*(.*?)\*\* ?: (.*?)(?=\n- |\Z)"
+#     matches = re.findall(pattern, raw_text, re.DOTALL)
+#     sources = []
+#     for num, title, content in matches:
+#         sources.append({"num": num.strip(), "title": title.strip(), "content": content.strip()})
+#     return sources
+
 def parse_sources(raw_text):
-    pattern = r"- \[(\d+)\] \*\*(.*?)\*\* ?: (.*?)(?=\n- |\Z)"
+    pattern = r"- \[(\d+)\] \*\*(.*?)\*\* \(Source=(.*?), Pos=(.*?)\): (.*?)(?=\n- |\Z)"
     matches = re.findall(pattern, raw_text, re.DOTALL)
     sources = []
-    for num, title, content in matches:
-        sources.append({"num": num.strip(), "title": title.strip(), "content": content.strip()})
+    for num, title, source_id, pos, content in matches:
+        sources.append({
+            "num": num.strip(),
+            "title": title.strip(),
+            "source_id": source_id.strip(),
+            "position": pos.strip(),
+            "content": content.strip()
+        })
     return sources
 
+# def render_sources(raw_text):
+#     sources = parse_sources(raw_text)
+#     if len(sources) == 0:
+#         return raw_text
+#     out = ""
+#     for src in sources:
+#         content_html = re.sub(r"\*\*(.*?)\*\*", r"<b>\1</b>", src['content'])
+#         out += f"""
+# <details class="source-card">
+#   <summary class="source-title">
+#     📖 [{src['num']}] {src['title']}
+#   </summary>
+#   <div class="source-content">
+#     {content_html}
+#   </div>
+# </details>
+# """
+#     return out
 
 def render_sources(raw_text):
-    sources = parse_sources(raw_text)
-    if len(sources) == 0:
+    sources = parse_sources(raw_text)   # convert string -> list of dicts
+    if not sources:
         return raw_text
     out = ""
     for src in sources:
-        content_html = re.sub(r"\*\*(.*?)\*\*", r"<b>\1</b>", src['content'])
         out += f"""
 <details class="source-card">
   <summary class="source-title">
-    📖 [{src['num']}] {src['title']}
+    📖 [{src['num']}] ({src['source_id']}) {src['title']}
   </summary>
   <div class="source-content">
-    {content_html}
+    <i>[Chunk position: {src['position']}]</i>
+    <br>{src['content']}
   </div>
 </details>
 """
     return out
-
 
 # ==================== CSS ====================
 custom_css = """
