@@ -26,6 +26,8 @@ Para lanzar el sistema, despues de configurar correctamente `config_base.json` e
 ```bash
 ./launch_rag.sh
 ```
+A continuación se muestra una captura del sistema en funcionamiento:
+![Captura de la interfaz](screenshot.png)
 
 > ⚡ **Nota:** El **Reranker** se ejecuta en **GPU** cuando está disponible, ya que el procesamiento se realiza en local.  
 > Esto acelera significativamente el paso de *reranking* de los documentos antes de la generación de respuestas.
