@@ -4,6 +4,7 @@ import torch
 from backend.ConfigLoader import ConfigLoader
 from backend.retriever.Reranker import Reranker
 from backend.retriever.Retriever import Retriever
+from backend.llm_handler import LLMHandler
 from langchain_elasticsearch import ElasticsearchStore, ElasticsearchRetriever
 from typing import Dict
 from enum import Enum
@@ -27,6 +28,8 @@ class RAG:
         self.config = ConfigLoader.load(config_file)
         self.elastic_config = ConfigLoader.load_elastic(self.config.database.elastic_config_file)
         self.retriever = self.__initialize_retriever()
+        print("Initializing LLM...")
+        self.llm = LLMHandler(self.config)
         print("RAG system initialized successfully.")
     
     def __initialize_retriever(self):
@@ -118,8 +121,16 @@ class RAG:
         # Format the context for the response
         context = "\n\n".join([f"Documento {src['id']}: {src['content']}" for src in sources[:top_k]])
 
-        # Generate a dummy response (replace with actual model inference)
-        response_content = f"Respuesta generada con el modelo {model} en el dominio {domain} utilizando {retrieval_method} con top_k={top_k}.\n\nContexto:\n{context}"
+        # Generate response
+        system_prompt = self.llm.default_system_prompt_pre + context + self.llm.default_system_prompt_post
+        messages = [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_message},
+        ]
+        if self.llm.dummy:
+            response_content = f"[DUMMY RESPONSE] Model disabled. Messages: {user_message[:100]}..."
+        else:
+            response_content = self.llm.generate(messages)
         
         # Append the assistant's response to the chat history
         chat_history.append({"role": "assistant", "content": response_content})

@@ -15,7 +15,6 @@ class DummyRAG:
     def clear_chat(self):
         return [], "", ""
 
-
 def main(config_path):
     rag = RAG(config_path)
     gradio_app(rag)
@@ -26,14 +25,6 @@ def user_input(user_message, chat_history):
     chat_history.append({"role":"user","content":user_message})
     return "", chat_history
 
-
-# def parse_sources(raw_text):
-#     pattern = r"- \[(\d+)\] \*\*(.*?)\*\* ?: (.*?)(?=\n- |\Z)"
-#     matches = re.findall(pattern, raw_text, re.DOTALL)
-#     sources = []
-#     for num, title, content in matches:
-#         sources.append({"num": num.strip(), "title": title.strip(), "content": content.strip()})
-#     return sources
 
 def parse_sources(raw_text):
     pattern = r"- \[(\d+)\] \*\*(.*?)\*\* \(Source=(.*?), Pos=(.*?)\): (.*?)(?=\n- |\Z)"
@@ -49,24 +40,6 @@ def parse_sources(raw_text):
         })
     return sources
 
-# def render_sources(raw_text):
-#     sources = parse_sources(raw_text)
-#     if len(sources) == 0:
-#         return raw_text
-#     out = ""
-#     for src in sources:
-#         content_html = re.sub(r"\*\*(.*?)\*\*", r"<b>\1</b>", src['content'])
-#         out += f"""
-# <details class="source-card">
-#   <summary class="source-title">
-#     📖 [{src['num']}] {src['title']}
-#   </summary>
-#   <div class="source-content">
-#     {content_html}
-#   </div>
-# </details>
-# """
-#     return out
 
 def render_sources(raw_text):
     sources = parse_sources(raw_text)   # convert string -> list of dicts

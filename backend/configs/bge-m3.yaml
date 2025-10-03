@@ -13,3 +13,7 @@ retriever:
 
 reranker:
   use_reranking: false
+
+generator:
+  model_name: BSC-LT/salamandra-7b-instruct
+  quantization: true

@@ -34,11 +34,17 @@ class ElasticConfig:
     endpoint: str
 
 @dataclass
+class GeneratorConfig:
+    model_name: str
+    quantization: Optional[bool] = False
+
+@dataclass
 class Config:
     general_config: GeneralConfig
     database: DatabaseConfig
     retriever: RetrieverConfig
     reranker: RerankerConfig
+    generator: GeneratorConfig
     
 
 class ConfigLoader:
@@ -51,7 +57,8 @@ class ConfigLoader:
             general_config=GeneralConfig(**config_dict['general_config']),
             database=DatabaseConfig(**config_dict['database']),
             retriever=RetrieverConfig(**config_dict['retriever']),
-            reranker=RerankerConfig(**config_dict['reranker'])
+            reranker=RerankerConfig(**config_dict['reranker']),
+            generator=GeneratorConfig(**config_dict['generator'])
         )
     @staticmethod
     def load_elastic(config_path) -> Config:
@@ -72,3 +79,4 @@ if __name__ == "__main__":
     print("Database Config:", config.database)
     print("Retriever Config:", config.retriever)
     print("Reranker Config:", config.reranker)
+    print("Generator Config:", config.generator)
