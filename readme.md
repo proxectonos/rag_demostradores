@@ -62,6 +62,8 @@ El fichero de configuración para ElasticSearch es un JSON donde la clave es el 
         "nombre": {
             "bm25_index": "indice de elasticsearch indexado por texto",
             "embedding_index": "indice de elasticsearch indexado con embeddings",
+			"embedding_field": "campo donde se almacena el embedding",
+			"embedding_text_field": "texto asociado al embedding anterior (es decir, el chunk del que se ha hecho el embedding",
             "highlight_field": "(texto) campo para extraer el fragmento con mejor matching",
             "search_fields": [
                 "campos para realizar la busqueda textual"
@@ -86,6 +88,8 @@ El fichero de configuración para ElasticSearch es un JSON donde la clave es el 
 Los primeros campos son para indicar dónde y como hacer la búsqueda:
  - bm25_index y embedding_index son los nombres de los indices de ElasticSearch donde se van a consultar los datos, indexados textualmente o con embeddings respectivamente.
  - highlight_field es el campo que se tendrá en cuenta para tomar un highlight en caso de hacer búsqueda textual
+ - embedding_field  es el campo donde se han indexado los embeddings en el índice de ElasticSearch
+ - embedding_text_field es el campo donde se almacena el texto del que se ha hecho el embedding del campo anterior (es decir, el chunk de texto del que se hace el embedding) -- el objetivo de este campo es para mostrar el texto después en la interfaz
  - search_fields son los campos que se van a querer utilizar para realizar la búsqueda en caso de hacer búsqueda textual. Se pueden indicar varios campos (titulo, texto, etc) y todos ellos se tendrán en cuenta a la hora de buscar
  - filter es para indicar los filtros de búsqueda (no está implementado aún)
 
