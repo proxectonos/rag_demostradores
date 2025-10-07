@@ -274,7 +274,7 @@ class RAG:
             data = {
                 "size": n_docs,
                 "knn": {
-                    "field": "embedding",
+                    "field": index_cfg["embedding_field"],
                     "query_vector": self.encodermodel.encode(query).tolist(),
                     "k": 100,
                     "num_candidates": 1000
@@ -289,14 +289,14 @@ class RAG:
             
             hits = response.json()["hits"]["hits"]
 
-            return self.format_response(hits, index)
+            return self.format_response(hits, index, embeddings)
             
         except requests.exceptions.RequestException as e:
             print(f"Error en la búsqueda: {e}")
             return {"documents": [], "metadatas": [], "scores": []}
         
 
-    def format_response(self, hits, index):
+    def format_response(self, hits, index, embeddings):
         """
         Format the Elasticsearch response to adapt it to the RAG system, reranker and output. Format will be done according to the configuration file.
         :param hits: Hits from Elasticsearch response.
@@ -310,14 +310,13 @@ class RAG:
         for hit in hits:
             source = hit["_source"]
             highlight_field = index_cfg["highlight_field"]
-            highlighted_fragments = hit.get("highlight", {}).get(highlight_field, [""])
-            
-            for fragment in highlighted_fragments:
-                if fragment == "":
-                    contenido_texto = source.get("contenido_texto", "")
-                else:
-                    contenido_texto = fragment
 
+            if embeddings:
+                highlighted_fragments = [source.get(index_cfg["embedding_text_field"], "")]
+            else:
+                highlighted_fragments = hit.get("highlight", {}).get(highlight_field, [""])
+            
+            for contenido_texto in highlighted_fragments:
                 format_template = index_cfg["formatted_text"]
                 context = {field: source.get(field, "") for field in index_cfg["formatted_text_fields"]}
                 context.update({"text": contenido_texto})
