@@ -1,5 +1,5 @@
 from datetime import datetime
-from transformers import AutoTokenizer, AutoModelForCausalLM
+from transformers import AutoTokenizer, AutoModelForCausalLM, BitsAndBytesConfig
 import torch
 
 class LLMHandler:
@@ -19,6 +19,7 @@ class LLMHandler:
             self.dummy = False
 
         # Default Galician prompts (used in RAG context mode)
+        self.default_system_prompt = self.default_prompt()
         self.default_system_prompt_pre = self._default_prompt_pre()
         self.default_system_prompt_post = self._default_prompt_post()
 
@@ -29,6 +30,7 @@ class LLMHandler:
         """Load Salamandra model + tokenizer."""
         model_name = self.config.generator.model_name
         cache_dir = self.config.general_config.hf_cache_dir
+        use_quantization = self.config.generator.quantization
 
         quantization_config = BitsAndBytesConfig(
             load_in_4bit=True,
@@ -40,24 +42,33 @@ class LLMHandler:
         model = AutoModelForCausalLM.from_pretrained(
             model_name,
             device_map="auto",
-            torch_dtype=torch.bfloat16,
+            dtype=torch.bfloat16,
             cache_dir=cache_dir,
-            quantization_config=quantization_config if self.generator.quantization else None
+            quantization_config=quantization_config if use_quantization else None
         )
         return model, tokenizer
 
     # ----------------------------
     # Default system prompts
     # ----------------------------
+    def default_prompt(self):
+        return (
+            "You are a helpful and impartial Galician news assistant.\n"
+            "You must always reply in Galician.\n"
+            "\n"
+            "You will answer user questions using only the information provided in the context below.\n"
+            "If the context contains enough information, write a concise and factual summary (3–5 sentences) in a natural journalistic tone.\n"
+            "\n"
+            "If the context does not contain the answer, reply exactly with: \"Non o sei. Esa información non está dispoñible.\"\n"
+            "\n"
+            "Do not include or infer any information not present in the context.\n"
+            "Do not explain, elaborate, or repeat this sentence. End your reply immediately afterward.\n"
+            "\n"
+            "The user may ask several related questions in sequence; maintain consistency and impartiality across turns.\n"
+        )
+
     def _default_prompt_pre(self):
         return (
-            "You are a helpful and impartial news assistant that always replies in Galician. \n"
-            "You will answer questions using only the information provided in the context below. \n"
-            "If the context contains enough information to answer, provide a short, clear summary (3–5 sentences). \n"
-            "Respond in a clear and natural tone, similar to a short news brief, but keep your answers concise. \n"
-            "Do not add any information that is not present in the context. \n"
-            "If the context does not contain the answer, reply exactly with: Non o sei. Esa información non está dispoñible. \n"
-            "Do not explain further, do not elaborate, and do not repeat. End your reply immediately after writing that sentence.\n\n"
             "Context:\n"
             "-------------------------\n"
         )
@@ -66,7 +77,7 @@ class LLMHandler:
         return (
             "-------------------------\n\n"
             "The user will now ask a question related to the context. \n"
-            "Answer based only on the provided context."
+            "Answer based only on the provided context. \n"
         )
 
     # ----------------------------
@@ -93,7 +104,7 @@ class LLMHandler:
     # ----------------------------
     # Response generation
     # ----------------------------
-    def generate_reponse(self, messages, max_new_tokens=200):
+    def generate(self, messages, max_new_tokens=200):
         """
         Generate a response for a chat conversation.
 
@@ -105,6 +116,7 @@ class LLMHandler:
 
         # Prepare inputs
         prompt = self._prepare_prompt(messages)
+        print(prompt)
         inputs = self._tokenize_prompt(prompt)
 
         # Generate
@@ -119,12 +131,13 @@ class LLMHandler:
         )
 
         # Decode and clean
-        response = self.tokenizer.decode(outputs[0], skip_special_tokens=True)
-        response = response.replace(prompt, "").strip()
+        generated_tokens = outputs[0][len(inputs[0]):]
+        response = self.tokenizer.decode(generated_tokens, skip_special_tokens=True)
+        print(response)
+        #response = response.replace(prompt, "").strip()
 
         # Stop sequence cleanup
         stop_sequence = "Non o sei."
         if stop_sequence in response:
             response = response.split(stop_sequence)[0] + stop_sequence
-
         return response.strip()

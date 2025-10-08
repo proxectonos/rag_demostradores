@@ -30,6 +30,7 @@ class RAG:
         self.retriever = self.__initialize_retriever()
         print("Initializing LLM...")
         self.llm = LLMHandler(self.config)
+        self.messages = self.initialize_conversation()
         print("RAG system initialized successfully.")
     
     def __initialize_retriever(self):
@@ -112,6 +113,7 @@ class RAG:
         return source_info, initial_docs_info
     
     def generate_response(self, chat_history, model, domain, retrieval_method, top_k):
+        
         # Get the latest user message
         user_message = chat_history[-1]['content']
         
@@ -122,15 +124,31 @@ class RAG:
         context = "\n\n".join([f"Documento {src['id']}: {src['content']}" for src in sources[:top_k]])
 
         # Generate response
-        system_prompt = self.llm.default_system_prompt_pre + context + self.llm.default_system_prompt_post
-        messages = [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_message},
-        ]
+        prompt = self.llm.default_system_prompt_pre + context + self.llm.default_system_prompt_post + user_message
+        
+        use_chat_memory = False
+        if use_chat_memory: 
+            self.messages.append({"role": "user", "content": prompt})
+        else:
+            self.messages = [
+                {"role": "system", "content": self.llm.default_system_prompt},
+                {"role": "user", "content": prompt},
+            ]
+
+        # --- FIX: ensure alternating roles to prevent TemplateError ---
+        if len(self.messages) >= 2 and self.messages[-1]["role"] == self.messages[-2]["role"]:
+            print("[Warning] Fixing consecutive roles:", self.messages[-2]["role"])
+            # drop the previous one if roles repeat (e.g., user→user)
+            self.messages.pop(-2)
+
+        # Generate response
         if self.llm.dummy:
             response_content = f"[DUMMY RESPONSE] Model disabled. Messages: {user_message[:100]}..."
         else:
-            response_content = self.llm.generate(messages)
+            response_content = self.llm.generate(self.messages)
+
+        # Append assistant response to maintain alternation
+        self.messages.append({"role": "assistant", "content": response_content})
         
         # Append the assistant's response to the chat history
         chat_history.append({"role": "assistant", "content": response_content})
@@ -149,6 +167,15 @@ class RAG:
     
     def clear_chat(self):
         return [], "", ""
+
+    def initialize_conversation(self):
+        messages = [
+            {
+                "role": "system",
+                "content": self.llm.default_system_prompt
+            }
+        ]
+        return messages
 
 if __name__ == "__main__":
     # Print the configuration for debugging
