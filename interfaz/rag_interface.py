@@ -21,7 +21,13 @@ def main(config_path):
 
 
 def user_input(user_message, chat_history):
-    """Handle user input and add it to the chat history."""
+    """
+    Handle user input and add it to the chat history.
+    :param user_message: The message input by the user.
+    :param chat_history: The current chat history.
+    :return: Updated chat history with the new user message.
+    """
+
     chat_history.append({"role":"user","content":user_message})
     return "", chat_history
 
@@ -60,111 +66,9 @@ def render_sources(raw_text):
 """
     return out
 
-# ==================== CSS ====================
-custom_css = """
-/* General */
-body {
-    font-family: 'Inter', sans-serif;
-}
-
-/* Title */
-#title h1 {
-    font-size: 28px;
-    font-weight: 700;
-    margin-bottom: 0;
-    color: var(--body-text-color); /* se adapta a claro/oscuro */
-}
-
-/* Chatbot container */
-.gr-chatbot {
-    border-radius: 12px;
-    background: var(--block-background-fill); /* mismo fondo que rows */
-}
-#chatbot [aria-label="chatbot conversation"] {
-    border-radius: 12px;
-    background: var(--block-background-fill); /* mismo fondo que rows */
-    border: 1px solid var(--block-border-color);  /* fino borde gris adaptativo */
-    padding: 10px;
-}
-/* Mensajes */
-.gr-chatbot-message.user {
-    background: var(--color-accent-soft) !important;
-    color: var(--color-accent-text) !important;
-    border-radius: 12px 12px 0 12px !important;
-    padding: 10px 14px;
-    font-size: 15px;
-}
-
-.gr-chatbot-message.assistant {
-    background: var(--block-label-background-fill) !important;
-    color: var(--body-text-color) !important;
-    border-radius: 12px 12px 12px 0 !important;
-    padding: 10px 14px;
-    font-size: 15px;
-}
-
-/* Input area */
-textarea, input {
-    border-radius: 8px !important;
-    border: 1px solid var(--border-color-primary) !important;
-    padding: 10px !important;
-    font-size: 15px !important;
-}
-
-/* Botones */
-button {
-    border-radius: 8px !important;
-    font-weight: 600 !important;
-}
-
-/* Sidebar Fuentes */
-#sources_column {
-    height: 70vh;
-    overflow-y: auto;
-    padding-right: 6px;
-    background: var(--block-background-fill); /* usa fondo del tema */
-    border-radius: 12px;
-    border: 1px solid var(--border-color-primary); /* línea para diferenciar */
-}
-
-/* Fuente cards */
-.source-card {
-    margin-bottom: 10px;
-    border: 1px solid var(--border-color-primary);
-    border-radius: 10px;
-    padding: 6px;
-    background: var(--block-label-background-fill); /* dinámico */
-}
-
-.source-title {
-    font-weight: 600;
-    font-size: 15px;
-    cursor: pointer;
-}
-
-.source-content {
-    margin-top: 6px;
-    padding-left: 12px;
-    font-size: 14px;
-    line-height: 1.5;
-}
-
-/* Layout */
-#main_row {
-    display: flex !important;
-    flex-wrap: wrap !important;
-    gap: 12px;
-}
-#main_row > .gr-column {
-    flex: 1 1 250px;
-    min-width: 250px;
-}
-"""
-
-
 # ==================== GRADIO APP ====================
 def gradio_app(rag):
-    with gr.Blocks(css=custom_css, theme=gr.themes.Soft()) as demo:
+    with gr.Blocks(css_paths="interfaz/style.css", theme=gr.themes.Soft()) as demo:
         gr.HTML(f"<center id='title'><h1>💬 Demostrador RAG</h1></center>")
         with gr.Row(equal_height=True, elem_id="main_row"):
             with gr.Column(scale=5):
