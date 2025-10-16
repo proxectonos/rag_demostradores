@@ -127,14 +127,13 @@ class Reranker:
         scores = self.reranker.compute_scores(query, passages, normalize=self.normalize)
         return scores
     
-    def rerank(self, query: str, docs: List[Any], top_k: int = 5) -> List[Any]:
+    def rerank(self, query: str, docs: List[Any]) -> List[Any]:
         """
         Rerank documents based on relevance to query.
         
         Args:
             query: User query
             docs: List of documents to rerank
-            top_k: Number of documents to return
             
         Returns:
             List of reranked documents
@@ -146,5 +145,4 @@ class Reranker:
         # Create (doc, score) pairs and sort by score in descending order
         scored_docs = list(zip(docs, scores))
         scored_docs.sort(key=lambda x: x[1], reverse=True)
-        #return [doc for doc, _ in scored_docs[:top_k]]
         return scored_docs

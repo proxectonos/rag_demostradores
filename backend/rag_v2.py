@@ -5,18 +5,10 @@ from backend.ConfigLoader_v2 import ConfigLoader
 from backend.retriever.Reranker import Reranker
 from backend.retriever.Retriever import Retriever
 from backend.llm_handler_v2 import LLMHandler
-from langchain_elasticsearch import ElasticsearchStore, ElasticsearchRetriever
+from langchain_elasticsearch import  ElasticsearchRetriever
 from typing import Dict
 from enum import Enum
 import pprint
-
-
-class ElasticSearchStrategy(Enum):
-    BM25 = ElasticsearchStore.BM25RetrievalStrategy()
-    APROX = ElasticsearchStore.ApproxRetrievalStrategy()
-    EXACT = ElasticsearchStore.ExactRetrievalStrategy()
-    SPARSE = ElasticsearchStore.SparseVectorRetrievalStrategy()
-    SIMILARITY = "SIMILARITY"
 
 class RAG:
     def __init__(self, config_file, retriever_name=None, reranker_name=None, generator_name=None):
@@ -113,9 +105,9 @@ class RAG:
 
         return Retriever(
             vectorstore=vectorstore_retriever,
-            top_k=self.config.num_docs_reranker,
             reranker=reranker,
-            initial_retrieve_count=self.config.num_docs_retrieval
+            num_docs_retrieval=self.config.num_docs_retrieval,
+            num_docs_reranker=self.config.num_docs_reranker
         )
 
     def retrieve_contexts(self, user_query: str):        

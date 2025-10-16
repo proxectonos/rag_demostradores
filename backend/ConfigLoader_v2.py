@@ -111,7 +111,7 @@ class ConfigLoader:
             default_retriever=config_dict['DEFAULT_RETRIEVER'],
             default_reranker=config_dict['DEFAULT_RERANKER'],
             default_generator=config_dict['DEFAULT_GENERATOR'],
-            num_docs_retrieval=config_dict['NUM_DOCS_RETIEVAL'],  # Nota: mantiene el typo del JSON original
+            num_docs_retrieval=config_dict['NUM_DOCS_RETRIEVAL'],  # Nota: mantiene el typo del JSON original
             num_docs_reranker=config_dict['NUM_DOCS_RERANKER'],
             elastic_config_path=config_dict['ELASTIC_CONFIG'],
             hf_cache_dir=config_dict['HF_CACHE_DIR'],

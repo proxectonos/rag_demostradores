@@ -120,7 +120,7 @@ def update_num_docs_handler(rag, num_retrieval, num_reranker):
         rag.config.num_docs_reranker = int(num_reranker)
         
         # Reinitialize retriever with new settings
-        rag.retriever = rag._RAG__initialize_retriever()
+        #rag.retriever = rag._RAG__initialize_retriever()
         
         return f"✓ Documentos actualizados: {num_retrieval} retrieval, {num_reranker} reranker"
     except Exception as e:
@@ -185,7 +185,7 @@ def gradio_app(rag):
                 with gr.Row():
                     num_retrieval_slider = gr.Slider(
                         minimum=1,
-                        maximum=20,
+                        maximum=50,
                         value=rag.config.num_docs_retrieval,
                         step=1,
                         label="Documentos Retrieval",
@@ -193,7 +193,7 @@ def gradio_app(rag):
                     )
                     num_reranker_slider = gr.Slider(
                         minimum=1,
-                        maximum=20,
+                        maximum=min(10, rag.config.num_docs_retrieval),
                         value=rag.config.num_docs_reranker,
                         step=1,
                         label="Documentos Reranker",
