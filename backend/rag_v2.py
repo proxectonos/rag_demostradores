@@ -117,7 +117,7 @@ class RAG:
         initial_docs, final_docs = self.retriever.invoke(user_query)
         
         # Format context from retrieved and reranked documents
-        context = "\n\n".join([f"Documento {i+1}: {doc.text}" for i, (doc,_) in enumerate(final_docs)])
+        context = "\n\n".join([f"Documento {i+1}: {doc.page_content}" for i, (doc,_) in enumerate(final_docs)])
         
         # Store source information
         source_info = []
