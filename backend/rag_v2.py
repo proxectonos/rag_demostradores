@@ -1,11 +1,9 @@
-from elasticsearch import Elasticsearch
 from sentence_transformers import SentenceTransformer
 import torch
 from backend.ConfigLoader_v2 import ConfigLoader
 from backend.retriever.Reranker import Reranker
-from backend.retriever.Retriever import Retriever
+from backend.retriever.Retriever_v2 import Retriever
 from backend.llm_handler_v2 import LLMHandler
-from langchain_elasticsearch import  ElasticsearchRetriever
 from typing import Dict
 from enum import Enum
 import pprint
@@ -70,7 +68,7 @@ class RAG:
             }
         
         def vector_query(search_query: str) -> Dict:
-            vector = embedding_model.encode(search_query)
+            vector = embedding_model.encode(search_query).tolist()
             return {
                 "knn": {
                     "field": "text_embedding",
@@ -78,36 +76,40 @@ class RAG:
                 }
             }
         
-        # Connect to Elasticsearch
-        es_client = Elasticsearch(
-            hosts=[self.config.elastic_config.endpoint],
-            basic_auth=(self.config.elastic_config.username, self.config.elastic_config.password)
-        )
+        # # Connect to Elasticsearch
+        # es_client = Elasticsearch(
+        #     hosts=[self.config.elastic_config.endpoint],
+        #     basic_auth=(self.config.elastic_config.username, self.config.elastic_config.password)
+        # )
         
-        # Create the vectorstore retriever
-        vectorstore_retriever = ElasticsearchRetriever(
-            es_client=es_client,
-            index_name=self.retriever_config.elastic_index,
-            content_field="text",
-            body_func=bm25_query if not self.retriever_config.embeddings else vector_query,
-        )
+        # # Create the vectorstore retriever
+        # vectorstore_retriever = ElasticsearchRetriever(
+        #     es_client=es_client,
+        #     index_name=self.retriever_config.elastic_index,
+        #     content_field="text",
+        #     body_func=bm25_query if not self.retriever_config.embeddings else vector_query,
+        # )
         
+        search_url = F"{self.config.elastic_config.endpoint}/{self.retriever_config.elastic_index}/_search?size={self.config.num_docs_retrieval}"
         # Initialize reranker if needed
         reranker = None
         if self.reranker_config.model_name:  # Si model_name no está vacío
             print(f"Loading reranker: {self.reranker_config.model_name}...")
             reranker = Reranker(
-                model_name=self.reranker_config.model_name,
-                hf_cache_dir=self.config.hf_cache_dir,
-                use_fp16=True,
-                normalize=True
+                model_name = self.reranker_config.model_name,
+                hf_cache_dir = self.config.hf_cache_dir,
+                use_fp16 = True,
+                normalize = True
             )
 
         return Retriever(
-            vectorstore=vectorstore_retriever,
-            reranker=reranker,
-            num_docs_retrieval=self.config.num_docs_retrieval,
-            num_docs_reranker=self.config.num_docs_reranker
+            search_url = search_url,
+            search_func = bm25_query if not self.retriever_config.embeddings else vector_query,
+            es_user = self.config.elastic_config.username,
+            es_password = self.config.elastic_config.password,
+            reranker = reranker,
+            num_docs_retrieval = self.config.num_docs_retrieval,
+            num_docs_reranker = self.config.num_docs_reranker
         )
 
     def retrieve_contexts(self, user_query: str):        
@@ -115,7 +117,7 @@ class RAG:
         initial_docs, final_docs = self.retriever.invoke(user_query)
         
         # Format context from retrieved and reranked documents
-        context = "\n\n".join([f"Documento {i+1}: {doc.page_content}" for i, (doc,_) in enumerate(final_docs)])
+        context = "\n\n".join([f"Documento {i+1}: {doc.text}" for i, (doc,_) in enumerate(final_docs)])
         
         # Store source information
         source_info = []
