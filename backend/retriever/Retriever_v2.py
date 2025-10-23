@@ -66,6 +66,7 @@ class Retriever:
             # Parse the results
             hits = response.json().get('hits', {}).get('hits', [])
             documents = [hit['_source'] for hit in hits]
+            print(f"ElasticSearch response fields: {documents[0].keys()}")
         except requests.exceptions.RequestException as e:
             print(f"Error during ElasticSearch request: {e}")
         print(f"Retrieved {len(documents)} documents from ElasticSearch.")

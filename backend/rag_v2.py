@@ -117,7 +117,7 @@ class RAG:
         initial_docs, final_docs = self.retriever.invoke(user_query)
         
         # Format context from retrieved and reranked documents
-        context = "\n\n".join([f"Documento {i+1}: {doc.page_content}" for i, (doc,_) in enumerate(final_docs)])
+        context = "\n\n".join([f"Documento {i+1}: {doc.get("text")}" for i, (doc,_) in enumerate(final_docs)])
         
         # Store source information
         source_info = []
@@ -127,7 +127,7 @@ class RAG:
             source_data = {
                 "id": i+1,
                 "score": score,
-                "content": doc.page_content,
+                "content": doc.get("text"),
                 "metadata": doc.metadata if hasattr(doc, "metadata") else {}
             }
             source_info.append(source_data)
@@ -136,7 +136,7 @@ class RAG:
             source_data = {
                 "id": i+1,
                 "score": score,
-                "content": doc.page_content,
+                "content": doc.get("text"),
                 "metadata": doc.metadata if hasattr(doc, "metadata") else {}
             }
             initial_docs_info.append(source_data)
@@ -150,7 +150,7 @@ class RAG:
         
         # Retrieve relevant documents
         _, sources = self.retrieve_contexts(user_message)
-        
+        print(f"Sources example: {sources[0]}")
         # Format the context for the response
         context = "\n\n".join([f"Documento {src['id']}: {src['content']}" for src in sources[:top_k]])
 
@@ -186,11 +186,11 @@ class RAG:
         # Prepare source text and context text for display
         source_text = ""
         context_text = ""
+        meta = sources[0].get("metadata", {}).get("_source", {})
         for src in sources[:top_k]:
-            meta = src["metadata"].get("_source", {})
-            source_id = meta.get("source_id", f"Praza-{meta.get('published_on')}")
-            title = meta.get("title", meta.get("headline", "Untitled"))
-            position = meta.get("relative_chunk_id", "-1")
+            source_id = src.get("source_id", f"Praza-{meta.get('published_on')}")
+            title = src.get("title", meta.get("headline", "Untitled"))
+            position = src.get("relative_chunk_id", "-1")
             content = src["content"].replace("\n", " ")
             context_text += f"- [{src['id']}] **{title}** (Source={source_id}, Pos={position}): {content}\n"
         
