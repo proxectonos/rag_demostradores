@@ -1,7 +1,9 @@
+import requests
+
 class Retriever:
     """A retriever class that handles document retrieval with optional reranking."""
     
-    def __init__(self, vectorstore, reranker=None, num_docs_retrieval=10, num_docs_reranker=5):
+    def __init__(self, search_url, es_user, es_password, search_func, reranker=None, num_docs_retrieval=10, num_docs_reranker=5):
         """
         Initialize the document retriever.
         
@@ -11,11 +13,13 @@ class Retriever:
             num_docs_retrieval: Number of documents to retrieve initially
             num_docs_reranker: Number of documents to rerank
         """
-        self.vectorstore = vectorstore
         self.num_docs_retrieval = num_docs_retrieval
         self.num_docs_reranker = num_docs_reranker
         self.reranker = reranker
-        self.base_retriever = vectorstore
+        self.search_url = search_url
+        self.search_func = search_func
+        self.es_user = es_user
+        self.es_password = es_password
 
     def invoke(self, query):
         """
@@ -30,7 +34,7 @@ class Retriever:
                 - reranked_docs: List of documents after reranking (or top_k if no reranker)
         """
         # Get initial results
-        retrieved_docs = self.base_retriever.invoke(query)
+        retrieved_docs = self.search_documents(query)
         # Apply reranking if available
         if self.reranker:
             reranked_docs = self.reranker.rerank(query, retrieved_docs)
@@ -40,3 +44,46 @@ class Retriever:
             reranked_docs = [(doc, "N/A") for doc in retrieved_docs]
             final_reranked_docs = final_reranked_docs = [(doc, "N/A") for doc in retrieved_docs[:self.num_docs_reranker]]
         return reranked_docs, final_reranked_docs
+    
+    def format_documents(self, raw_documents):
+        """
+        Format raw documents retrieved from ElasticSearch.
+        
+        Args:
+            raw_documents: List of raw document dicts from ES
+        """
+        documents = []
+        for doc in raw_documents:
+            text = doc.get('text')
+            metadata = {k: v for k, v in doc.items() if k != 'text'}
+            documents.append({'text': text, 'metadata': metadata})
+        return documents
+
+    def search_documents(self, query):
+        """
+        Search documents in ElasticSearch for the given query.
+        
+        Args:
+            query: User query
+        Returns:
+            List of retrieved documents
+        """
+        try:
+            # Make the request to ElasticSearch
+            response = requests.post(
+                self.search_url, 
+                auth=(self.es_user, self.es_password), 
+                json=self.search_func(query)
+            )
+            response.raise_for_status()
+            
+            # Parse the results
+            hits = response.json().get('hits', {}).get('hits', [])
+            raw_documents = [hit['_source'] for hit in hits]
+            documents = self.format_documents(raw_documents)
+            if documents:
+                print(f"ElasticSearch response fields: {list(documents[0].keys())}, metadata fields: {list(documents[0]['metadata'].keys())}")
+        except requests.exceptions.RequestException as e:
+            print(f"Error during ElasticSearch request: {e}")
+        print(f"Retrieved {len(documents)} documents from ElasticSearch.")
+        return documents

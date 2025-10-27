@@ -139,7 +139,6 @@ class Reranker:
             List of reranked documents
         """
         # Extract text content from documents
-        print("Keys in reranker: ",docs[0].keys())
         passages = [doc.get("text") for doc in docs]
         scores = self.compute_scores(query, passages)
         

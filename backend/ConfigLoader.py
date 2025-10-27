@@ -1,30 +1,30 @@
 from dataclasses import dataclass
-from typing import Optional
+from typing import Optional, Dict, Any
 import yaml
+import json
 import os
 
 @dataclass
-class GeneralConfig:
-    hf_cache_dir: str
-
-@dataclass
-class DatabaseConfig:
+class RetrievalModelConfig:
+    embeddings: bool
+    model_name: str
     elastic_index: str
-    elastic_config_file: str
-    chunk_size: Optional[int] = None
-    chunk_overlap: Optional[int] = None
 
 @dataclass
-class RetrieverConfig:
-    retrieval_strategy: str
-    initial_retrieve_count: int
-    query_top_k: int
-    embedding_model: Optional[str] = None
+class RerankerModelConfig:
+    model_name: str
 
 @dataclass
-class RerankerConfig:
-    use_reranking: bool
-    reranker_model: Optional[str] = None
+class GenerationModelConfig:
+    openai_base_url: str
+    openai_api_key: str
+    model_name: str
+    quantization: bool
+
+@dataclass
+class PromptsConfig:
+    retrieval_system_prompt: str
+    non_retrieval_system_prompt: str
 
 @dataclass
 class ElasticConfig:
@@ -34,34 +34,107 @@ class ElasticConfig:
     endpoint: str
 
 @dataclass
-class GeneratorConfig:
-    model_name: str
-    quantization: Optional[bool] = False
-
-@dataclass
 class Config:
-    general_config: GeneralConfig
-    database: DatabaseConfig
-    retriever: RetrieverConfig
-    reranker: RerankerConfig
-    generator: GeneratorConfig
+    # Diccionarios con todos los modelos disponibles
+    retrieval_models: Dict[str, RetrievalModelConfig]
+    reranker_models: Dict[str, RerankerModelConfig]
+    generation_models: Dict[str, GenerationModelConfig]
     
+    # Modelos por defecto seleccionados
+    default_retriever: str
+    default_reranker: str
+    default_generator: str
+    
+    # Configuraciones generales
+    num_docs_retrieval: int
+    num_docs_reranker: int
+    elastic_config_path: str
+    hf_cache_dir: str
+    prompts: PromptsConfig
+    
+    # Configuración de Elasticsearch (cargada desde archivo)
+    elastic_config: Optional[ElasticConfig] = None
+
 
 class ConfigLoader:
     @staticmethod
-    def load(config_path) -> Config:
-        with open(config_path, 'r') as file:
-            config_dict = yaml.safe_load(file)
+    def load(config_path: str) -> Config:
+        """
+        Carga la configuración desde un archivo JSON.
         
-        return Config(
-            general_config=GeneralConfig(**config_dict['general_config']),
-            database=DatabaseConfig(**config_dict['database']),
-            retriever=RetrieverConfig(**config_dict['retriever']),
-            reranker=RerankerConfig(**config_dict['reranker']),
-            generator=GeneratorConfig(**config_dict['generator'])
+        Args:
+            config_path: Ruta al archivo general_config.json
+            
+        Returns:
+            Config: Objeto de configuración completo
+        """
+        with open(config_path, 'r') as file:
+            config_dict = json.load(file)
+        
+        # Parsear modelos de retrieval
+        retrieval_models = {}
+        for name, model_data in config_dict['RETRIEVAL_MODELS'].items():
+            retrieval_models[name] = RetrievalModelConfig(
+                embeddings=model_data['embeddings'].lower() == 'true',
+                model_name=model_data['model_name'],
+                elastic_index=model_data['elastic_index']
+            )
+        
+        # Parsear modelos de reranking
+        reranker_models = {}
+        for name, model_data in config_dict['RERANKER_MODELS'].items():
+            reranker_models[name] = RerankerModelConfig(
+                model_name=model_data['model_name']
+            )
+        
+        # Parsear modelos de generación
+        generation_models = {}
+        for name, model_data in config_dict['GENERATION_MODELS'].items():
+            generation_models[name] = GenerationModelConfig(
+                openai_base_url=model_data.get('openai_base_url', ''),
+                openai_api_key=model_data.get('openai_api_key', ''),
+                model_name=model_data['model_name'],
+                quantization=model_data.get('quantization', 'false').lower() == 'true'
+            )
+        
+        # Parsear prompts
+        prompts = PromptsConfig(
+            retrieval_system_prompt=config_dict['PROMPTS']['retrieval_system_prompt'],
+            non_retrieval_system_prompt=config_dict['PROMPTS']['non_retrieval_system_prompt']
         )
+        
+        # Crear el objeto de configuración
+        config = Config(
+            retrieval_models=retrieval_models,
+            reranker_models=reranker_models,
+            generation_models=generation_models,
+            default_retriever=config_dict['DEFAULT_RETRIEVER'],
+            default_reranker=config_dict['DEFAULT_RERANKER'],
+            default_generator=config_dict['DEFAULT_GENERATOR'],
+            num_docs_retrieval=config_dict['NUM_DOCS_RETRIEVAL'],  # Nota: mantiene el typo del JSON original
+            num_docs_reranker=config_dict['NUM_DOCS_RERANKER'],
+            elastic_config_path=config_dict['ELASTIC_CONFIG'],
+            hf_cache_dir=config_dict['HF_CACHE_DIR'],
+            prompts=prompts
+        )
+        
+        # Cargar configuración de Elasticsearch si existe el archivo
+        if os.path.exists(config.elastic_config_path):
+            config.elastic_config = ConfigLoader.load_elastic(config.elastic_config_path)
+        
+        return config
+    
     @staticmethod
-    def load_elastic(config_path) -> Config:
+    def load_elastic(config_path: str) -> ElasticConfig:
+        """
+        Carga la configuración de Elasticsearch desde un archivo YAML.
+        
+        Args:
+            config_path: Ruta al archivo config_elastic.yaml
+            
+        Returns:
+            ElasticConfig: Configuración de Elasticsearch
+        """
         with open(config_path, 'r') as file:
             config_dict = yaml.safe_load(file)
 
@@ -72,11 +145,27 @@ class ConfigLoader:
             endpoint=config_dict['api_endpoint']
         )
 
+
 if __name__ == "__main__":
-    config_path = "config.yaml"
+    # Ejemplo de uso
+    config_path = "configs/general_config.json"
     config = ConfigLoader.load(config_path)
-    print("General Config:", config.general_config)
-    print("Database Config:", config.database)
-    print("Retriever Config:", config.retriever)
-    print("Reranker Config:", config.reranker)
-    print("Generator Config:", config.generator)
+    
+    print("=" * 50)
+    print("CONFIGURACIÓN CARGADA")
+    print("=" * 50)
+    
+    print(f"\nHF Cache Dir: {config.hf_cache_dir}")
+    print(f"Elastic Config Path: {config.elastic_config_path}")
+    print(f"Num Docs Retrieval: {config.num_docs_retrieval}")
+    print(f"Num Docs Reranker: {config.num_docs_reranker}")
+    
+    print("\n" + "=" * 50)
+    print("MODELOS DISPONIBLES")
+    print("=" * 50)
+    print("\nRetrievers:", list(config.retrieval_models.keys()))
+    print("Rerankers:", list(config.reranker_models.keys()))
+    print("Generators:", list(config.generation_models.keys()))
+
+    
+
