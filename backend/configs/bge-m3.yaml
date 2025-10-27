@@ -1,0 +1,19 @@
+general_config:
+  hf_cache_dir: /home/compartido/pabloF/cache
+
+database: 
+  elastic_index: bge_m3_paragraph
+  elastic_config_file: /home/compartido/pabloF/nos-rag-eval/rag_retriever/configs/config_elastic.yaml
+
+retriever:
+  embedding_model: BAAI/bge-m3  # Embedding model to use
+  retrieval_strategy: SIMILARITY  # Retrieval strategy to use [BM25, SIMILARITY, DEFAULT]
+  initial_retrieve_count: 10 # Number of initial results to retrieve before re-ranking
+  query_top_k: 3  # Number of top results to return for a query 
+
+reranker:
+  use_reranking: false
+
+generator:
+  model_name: BSC-LT/salamandra-7b-instruct
+  quantization: true

@@ -1,0 +1,56 @@
+{
+    "RETRIEVAL_MODELS":{
+        "BM25": {
+            "embeddings": "False",
+            "model_name": "",
+            "elastic_index": "no_embedding_paragraph"
+        },
+        "BGE-M3-Retriever": {
+            "embeddings": "True",
+            "model_name": "BAAI/bge-m3",
+            "elastic_index": "bge_m3_paragraph"
+        },
+        "ALL-MiniLM": {
+            "embeddings": "True",
+            "model_name": "sentence-transformers/all-MiniLM-L6-v2",
+            "elastic_index": "all_minilm_l6_v2_paragraph"
+        },
+        "Qwen3-Retriever": {
+            "embeddings": "True",
+            "model_name": "Qwen/Qwen3-Embedding-0.6B",
+            "elastic_index": "qwen3_paragraph"
+        }
+    },
+    "DEFAULT_RETRIEVER": "BGE-M3-Retriever",
+    "RERANKER_MODELS":  {
+        "None": {
+            "model_name": ""
+        },
+        "BGE-M3-Reranker": {
+            "model_name": "BAAI/bge-reranker-v2-m3"
+        },
+        "Qwen3-Reranker": {
+            "model_name": "Qwen/Qwen3-Reranker-0.6B"
+        }
+    },
+    "DEFAULT_RERANKER": "BGE-M3-Reranker",
+    
+    "GENERATION_MODELS": {
+        "Salamandra-7B Instruct": {
+            "openai_base_url": "",
+            "openai_api_key": "",
+            "model_name": "BSC-LT/salamandra-7b-instruct",
+            "quantization": "True"
+            
+        }
+    },
+    "DEFAULT_GENERATOR": "Salamandra-7B Instruct",
+    "NUM_DOCS_RETRIEVAL": 10,
+    "NUM_DOCS_RERANKER": 5,
+    "ELASTIC_CONFIG": "/home/compartido/pabloF/nos-rag-eval/rag_retriever/configs/config_elastic.yaml",
+    "HF_CACHE_DIR": "/home/compartido/pabloF/cache",
+    "PROMPTS": {
+        "retrieval_system_prompt" : "You are a helpful and impartial Galician news assistant.\nYou must always reply in Galician.\n\nYou will answer user questions using only the information provided in the context below.\nIf the context contains enough information, write a concise and factual summary (3–5 sentences) in a natural journalistic tone.\n\nIf the context does not contain the answer, reply exactly with: \"Non o sei. Esa información non está dispoñible.\"\n\nDo not include or infer any information not present in the context.\nDo not explain, elaborate, or repeat this sentence. End your reply immediately afterward.\n\nThe user may ask several related questions in sequence; maintain consistency and impartiality across turns. Today is {date}.",
+        "non_retrieval_system_prompt" : "You are a helpful Artificial Intelligence assistant called Latxa, created and developed by HiTZ, the Basque Center for Language Technology research center. The user will engage in a multi-round conversation with you, asking initial questions and following up with additional related questions. Your goal is to provide thorough, relevant and insightful responses to help the user with their queries. You should respond in the same language as the user input. Conversations will cover a wide range of topics, including but not limited to general knowledge, science, technology, entertainment, coding, mathematics, and more. Today is {date}."
+    }
+}
