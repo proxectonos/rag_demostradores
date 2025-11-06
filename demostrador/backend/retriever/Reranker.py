@@ -101,6 +101,21 @@ class Qwen3Reranker:
             scores = [1 / (1 + np.exp(-score)) for score in scores]  # Sigmoid normalization
         return scores
 
+class JinaReranker:
+    def __init__(self, model_name: str, cache_dir: str = None, use_fp16: bool = True):
+        self.model = AutoModel.from_pretrained(
+            model_name,
+            dtype="auto",
+            cache_dir=cache_dir,
+            trust_remote_code=True,
+        )
+        self.model.to('cuda' if use_fp16 else 'cpu')
+        self.model.eval()
+    
+    def compute_scores(self, query: str, passages: List[str], normalize) -> List[float]:
+        results = self.model.rerank(query, passages) #Jina model's has its own rerank method
+        return results
+
 class Reranker:
     def __init__(self, model_name, hf_cache_dir, use_fp16=True, normalize=True):
         """
@@ -118,6 +133,9 @@ class Reranker:
         elif model_name.startswith("Qwen"):
             # Use Qwen3 reranker
             self.reranker = Qwen3Reranker(model_name, cache_dir=hf_cache_dir, use_fp16=self.use_fp16)
+        elif model_name.startswith("jina"):
+            # Use Jina reranker
+            self.reranker = JinaReranker(model_name, cache_dir=hf_cache_dir, use_fp16=self.use_fp16)
         else:
             # Use SentenceTransformer for other models
             self.reranker = SentenceTransformerReranker(model_name, cache_dir=hf_cache_dir, use_fp16=self.use_fp16)
@@ -142,7 +160,14 @@ class Reranker:
         passages = [doc.get("text") for doc in docs]
         scores = self.compute_scores(query, passages)
         
+        scored_docs = []
+        # JinaReranker special handling. Jina already returns sorted results, with original indices
+        if self.reranker .__class__.__name__ == "JinaReranker":
+            for result in scores:
+                original_doc = docs[result['index']]
+                scored_docs.append((original_doc, float(result['relevance_score'])))
         # Create (doc, score) pairs and sort by score in descending order
-        scored_docs = list(zip(docs, scores))
-        scored_docs.sort(key=lambda x: x[1], reverse=True)
+        else:
+            scored_docs = list(zip(docs, scores))
+            scored_docs.sort(key=lambda x: x[1], reverse=True)
         return scored_docs
