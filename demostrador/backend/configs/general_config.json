@@ -31,9 +31,12 @@
         },
         "Qwen3-Reranker": {
             "model_name": "Qwen/Qwen3-Reranker-0.6B"
+        },
+        "JINA-V3-Reranker": {
+            "model_name": "jinaai/jina-reranker-v3"
         }
     },
-    "DEFAULT_RERANKER": "BGE-M3-Reranker",
+    "DEFAULT_RERANKER": "JINA-V3-Reranker",
     
     "GENERATION_MODELS": {
         "Salamandra-7B Instruct": {
