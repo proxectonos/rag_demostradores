@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from models import GetConfigResponse
+from api.models import GetConfigResponse
 
 router = APIRouter(prefix="", tags=["config"])
 
