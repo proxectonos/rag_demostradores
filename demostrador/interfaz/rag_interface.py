@@ -2,7 +2,7 @@ import argparse
 import gradio as gr
 import re
 import os
-from backend.rag import RAG
+from demostrador.backend.rag import RAG
 
 class DummyRAG:
     def __init__(self, config_path=None):
@@ -134,7 +134,7 @@ def gradio_app(rag):
     reranker_choices = list(rag.config.reranker_models.keys())
     generator_choices = list(rag.config.generation_models.keys())
     
-    with gr.Blocks(css_paths="interfaz/style.css", theme=gr.themes.Soft()) as demo:
+    with gr.Blocks(css_paths="demostrador/interfaz/style.css", theme=gr.themes.Soft()) as demo:
         gr.HTML(f"<center id='title'><h1>💬 Demostrador RAG</h1></center>")
         
         with gr.Row(equal_height=True, elem_id="main_row"):

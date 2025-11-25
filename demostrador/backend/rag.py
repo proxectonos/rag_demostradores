@@ -1,9 +1,9 @@
 from sentence_transformers import SentenceTransformer
 import torch
-from backend.ConfigLoader import ConfigLoader
-from backend.retriever.Reranker import Reranker
-from backend.retriever.Retriever import Retriever
-from backend.llm_handler import LLMHandler
+from demostrador.backend.ConfigLoader import ConfigLoader
+from demostrador.backend.retriever.Reranker import Reranker
+from demostrador.backend.retriever.Retriever import Retriever
+from demostrador.backend.llm_handler import LLMHandler
 from typing import Dict
 from enum import Enum
 import pprint
@@ -75,20 +75,6 @@ class RAG:
                     "query_vector": vector,
                 }
             }
-        
-        # # Connect to Elasticsearch
-        # es_client = Elasticsearch(
-        #     hosts=[self.config.elastic_config.endpoint],
-        #     basic_auth=(self.config.elastic_config.username, self.config.elastic_config.password)
-        # )
-        
-        # # Create the vectorstore retriever
-        # vectorstore_retriever = ElasticsearchRetriever(
-        #     es_client=es_client,
-        #     index_name=self.retriever_config.elastic_index,
-        #     content_field="text",
-        #     body_func=bm25_query if not self.retriever_config.embeddings else vector_query,
-        # )
         
         search_url = F"{self.config.elastic_config.endpoint}/{self.retriever_config.elastic_index}/_search?size={self.config.num_docs_retrieval}"
         # Initialize reranker if needed
